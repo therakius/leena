@@ -1,0 +1,35 @@
+@startuml system architecture
+top to bottom direction
+
+skinparam {
+    Nodesep 230
+    Ranksep 170
+    Linetype ortho
+}
+
+skinparam packagePadding 45
+skinparam componentPadding 15
+
+actor "Utilizador\n(WhatsApp)" as USER
+
+package "Backend (Node.js)" {
+    component "Bot WhatsApp\n(whatsapp-web.js)" as BOT
+}
+
+package "Serviços Externos" {
+    cloud "IA" as AI
+    cloud "Climate API" as CLIMATE
+    cloud "Holidays API" as HOLIDAYS
+}
+
+database "PostgreSQL" as DB
+
+USER --> BOT : mensagem
+BOT --> USER : resposta
+
+BOT <--> AI : previsão
+BOT --> CLIMATE : dados clima
+BOT --> HOLIDAYS : datas especiais
+BOT <..> DB : guardar histórico / consultar vendas
+
+@enduml
