@@ -1,78 +1,179 @@
-# Leena
+## Leena – Assistente Inteligente para Vendedores Informais
 
-Leena é uma assistente de vendas criada para apoiar comerciantes de mercados informais na decisão de compra para revenda. O foco é tornar decisões rápidas e assertivas, reduzindo desperdício e aumentando a margem.
+Leena é uma assistente de compras e vendas criada especificamente para comerciantes de mercados informais em Moçambique, começando por Maputo. O seu objetivo é ajudar a decidir o que comprar, em que quantidade e quando, reduzindo desperdício e aumentando a rentabilidade.
 
-## O que a Leena faz
+---
 
-- Analisa fatores ambientais e sociais (clima, sazonalidade local, datas comemorativas, perfil do bairro). 
-- Coleta dados com autorização do usuário: tipo de negócio, mix de produtos, histórico de vendas, estoque atual e feedback do cliente.
-- Gera recomendações personalizadas sobre o que comprar, quais itens evitar e em quais quantidades comprar.
-- Avalia a demanda semanal (como dias de maior procura para cada produto) e o ciclo anual (feriados próximos, temporadas regionais).
+### 📦 O que a Leena faz
 
-## Valor para o usuário
+- **Recomendação personalizada** – baseada no histórico do próprio vendedor, clima, dia da semana, época do mês e feriados.
+- **Alerta de risco** – avisa quando há probabilidade de sobra ou perda (ex: chuva prevista para alface).
+- **Interface por WhatsApp** – canal já conhecido e utilizado pelos vendedores informais.
+- **Aprendizado contínuo** – registos diários simples (“sobra: 3 kg cebola”) alimentam o modelo.
 
-- Reduz perdas com estoque parado e produtos perecíveis.
-- Aumenta giro de estoque com reposição mais alinhada à demanda.
-- Diminui compras impulsivas e exageradas.
-- Permite planejamento com antecedência usando previsões simples e alertas de risco.
+---
 
-## Público-alvo
+### 🎯 Valor para o utilizador (vendedor)
 
-- Camelôs e vendedores de barraca
-- Lojistas de mercearias e minimercados
-- Pequenos comerciantes de bairros que não usam sistema ERP
-- Empreendedores que precisam de auxílio para gestão de estoque e preço
+- **Menos desperdício** – compras ajustadas à procura real.
+- **Maior lucro** – melhor giro de mercadoria.
+- **Decisões com confiança** – dados em vez de “olhómetro”.
+- **Alertas proactivos** – antecipa-se ao clima e a feriados.
 
-## Entradas e integrações
+---
 
-- Vendas diárias (manual ou importação de planilhas)
-- Estoque e controles simples (lista de produtos com qtd e validade)
-- Interação via WhatsApp (usuário envia dados e consulta; Leena responde com mensagens e notificações personalizadas)
+### 👥 Público-alvo
 
-## Modelo AI e fontes de dados externas
+- Vendedores de frutas, legumes e vegetais em mercados informais de Maputo (Xipamanine, Zimpeto, Janete, Praça dos Combatentes).
+- Vendedores ambulantes que usam o WhatsApp como ferramenta de negócio.
+- Pequenos comerciantes sem acesso a sistemas ERP.
 
-- Powered by AI: uso de modelo de IA para analisar dados e sugerir decisões adaptativas
-- APIs externas: clima, datas comemorativas e possivelmente dados de atividade humana local
-- Dados do cliente: estoque, vendas, mix de produtos e histórico diário
+---
 
-## Como funciona (visão técnica)
+### 🧠 Como funciona (visão técnica)
 
-1. Recebe histórico de vendas, mix de produtos e informações de negócio.
-2. Normaliza e compara com padrões de procura por semana/mês.
-3. Aplica regras de negócio regionais e modelos leves de previsão (janela móvel 7/14/30 dias).
-4. Identifica produtos com demanda crescente, estável ou decrescente.
-5. Gera alertas de oportunidades e risco (promoções sazonais, feriados, excesso de estoque).
+A Leena combina um motor de **Retrieval-Augmented Generation (RAG)** com embeddings e um modelo de linguagem para gerar recomendações simples e humanizadas.
 
-## Tech Stack
+```
+1. O vendedor envia uma mensagem de WhatsApp (texto ou áudio).
+2. A mensagem é recebida pela Evolution API (self‑hosted).
+3. O backend (Node.js) identifica o vendedor e obtém:
+   - Histórico de vendas e perdas (últimos 30 dias)
+   - Dados de contexto: dia da semana, época do mês, clima (OpenWeather)
+4. A consulta é convertida em embedding (OpenAI text‑embedding‑3‑small).
+5. Uma busca vetorial (pgvector) na base de conhecimento encontra padrões relevantes.
+6. O modelo LLM (Groq Llama 3.3 70B) gera uma resposta curta, explicativa e em português simples.
+7. A resposta é enviada de volta via WhatsApp.
+```
 
-- **Backend**: JavaScript com Node.js e Express
-- **Banco de dados**: PostgreSQL
-- **Controle de versão**: Git e GitHub
+---
 
-## Privacidade e segurança
+### 🔌 Integrações e fontes de dados
 
-- Controle total dos dados pelo usuário.
-- Todos os dados são armazenados no servidor, na base de dados PostgreSQL, com criptografia.
-- Compartilhamento somente com consentimento explícito.
+| Categoria            | API / Serviço                         | Utilização                          |
+|----------------------|---------------------------------------|-------------------------------------|
+| **Embeddings**       | OpenAI `text-embedding-3-small`       | Vectorização de consultas e conhecimento |
+| **LLM (respostas)**  | Groq `llama-3.3-70b-versatile`        | Geração de recomendações            |
+| **Áudio**            | Groq Whisper `whisper-large-v3`       | Transcrição de áudios               |
+| **WhatsApp**         | Evolution API (self‑hosted)           | Gateway para mensagens              |
+| **Clima**            | OpenWeather One Call 3.0              | Previsão para 5 dias (chuva/calor)  |
+| **Feriados**         | Nager.Date                            | Feriados públicos de Moçambique     |
+| **Base de dados**    | PostgreSQL + pgvector                 | Armazenamento de histórico e conhecimento |
 
-## Exemplos de uso
+---
 
-- "Me mostre produtos com alta demanda para domingo próximo." 
-- "Qual produto eu devo repor mais rápido esta semana?" 
-- "Quais itens tenho estoque excessivo que devo reduzir nos próximos 15 dias?"
+### 🛠 Tech Stack
 
-## Caso de Uso Simples: Planejamento de Compra Semanal
+| Camada            | Tecnologia                                          |
+|-------------------|-----------------------------------------------------|
+| **Backend**       | Node.js + Express                                   |
+| **Banco de dados**| PostgreSQL 16 com extensão pgvector                 |
+| **WhatsApp**      | Evolution API (docker)                              |
+| **Hosting**       | Railway / Neon.tech (gratuito) + Cloudflare Tunnel  |
+| **IA**            | Groq (LLM), OpenAI (embeddings)                     |
+| **Outros**        | Axios, dotenv, winston (logs)                       |
 
-**Cenário**: Um camelô de frutas precisa decidir o que comprar para a semana, considerando estoque atual e vendas recentes.
+---
 
-1. **Usuário envia via WhatsApp**: "Atualizar estoque: maçã 50kg, banana 30kg, leite 20l."
-2. **Leena confirma e solicita mais dados**: "Recebido! Me diga as vendas de ontem para análise."
-3. **Usuário responde**: "Vendas ontem: maçã 20kg, banana 15kg, leite 10l."
-4. **Leena processa com IA**: Analisa dados internos, clima (chuva prevista) e feriado próximo (aumenta demanda por frutas).
-5. **Leena responde com recomendação**: "Recomendação: Compre mais maçã (alta demanda por feriado), reduza leite (estoque excessivo). Sugestões: maçã +30kg, banana +10kg, leite 0. Alerta: Chuva pode reduzir vendas de leite."
+### 📄 Exemplos de interação
 
-## Licença
+**Vendedor** (áudio):  
+> *“Quanto devo comprar de tomate hoje?”*
+
+**Leena** (resposta):  
+> 🍅 **Tomate: compra BAIXA**  
+> Hoje é segunda‑feira, costuma vender menos.  
+> ⚠️ Alerta: previsão de chuva amanhã – evite alface.
+
+---
+
+**Vendedor** (texto):  
+> `sobra: cebola 5kg, tomate 2kg`
+
+**Leena** (resposta):  
+> ✅ Registado. Com esses dados, amanhã recomendo comprar **menos cebola** e **tomate médio**.
+
+---
+    
+### Diagrama de Caso de Uso (Mermaid)
+
+```mermaid
+graph TB
+    subgraph Atores
+        Vendedor[Vendedor]
+        Admin[Administrador]
+        APIs[APIs Externas]
+    end
+
+    subgraph Leena
+        UC01[UC01: Registrar vendas diárias]
+        UC02[UC02: Registrar sobras/perdas]
+        UC03[UC03: Consultar recomendação de compra]
+        UC04[UC04: Previsão de demanda]
+        UC05[UC05: Receber alertas]
+        UC06[UC06: Cadastrar produtos]
+        UC07[UC07: Atualizar estoque atual]
+        UC08[UC08: Gerar relatório semanal]
+        UC09[UC09: Gerenciar base de conhecimento]
+        UC10[UC10: Autenticar vendedor]
+    end
+
+    %% Conexões entre atores e casos de uso
+    Vendedor --> UC01
+    Vendedor --> UC02
+    Vendedor --> UC03
+    Vendedor --> UC06
+    Vendedor --> UC07
+    Vendedor --> UC10
+
+    Admin --> UC08
+    Admin --> UC09
+
+    APIs --> UC04
+    APIs --> UC05
+
+    %% Relacionamentos entre casos de uso
+    UC03 --> UC04
+    UC03 --> UC01
+    UC03 --> UC02
+    UC05 --> UC04
+    UC09 --> UC08
+```
+
+### Explicação dos elementos
+
+- **Atores**:
+  - **Vendedor**: o utilizador principal que interage via WhatsApp.
+  - **Administrador**: responsável por gerir conhecimento e relatórios.
+  - **APIs Externas**: sistemas de clima, feriados, etc., que fornecem dados automaticamente.
+
+- **Casos de Uso**:
+  - `UC01` e `UC02` registam dados diários que alimentam as recomendações.
+  - `UC03` depende de `UC04` (previsão de demanda) e do histórico (`UC01`, `UC02`).
+  - `UC05` (alertas) é accionado por condições externas (clima, feriados) e utiliza `UC04`.
+  - `UC10` (autenticação) é implícito nos casos de uso do vendedor.
+  - `UC09` (gestão de conhecimento) é uma acção administrativa que influencia `UC08` (relatórios).
+
+> Este diagrama serve como referência para a implementação das funcionalidades da Leena, garantindo que todos os fluxos de valor estejam claramente definidos.
+
+### 🔒 Privacidade e segurança
+
+- Todos os dados são armazenados no PostgreSQL com criptografia em repouso (AES‑256).
+- As conversas são processadas localmente; as APIs externas recebem apenas os dados necessários para a consulta.
+- O vendedor controla os seus próprios dados e pode solicitar a remoção a qualquer momento.
+
+---
+
+### 🧪 Roadmap
+
+- [ ] Piloto com 20 vendedores no Mercado Janete
+- [ ] Suporte a changana nas respostas
+- [ ] Relatórios desempenho (dashboard)
+- [ ] Comparação entre mercados (dados agregados)
+- [ ] Alertas automáticos de previsão de clima
+
+---
+
+### 📝 Licença
 
 Este projeto está licenciado sob a [MIT License](LICENSE).
-
-
