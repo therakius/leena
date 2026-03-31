@@ -1,0 +1,66 @@
+@startuml ER_diagram
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+skinparam {
+    Nodesep 230
+    Ranksep 170
+    Linetype ortho
+}
+
+entity vendedores {
+  +id : SERIAL
+  nome : VARCHAR(100)
+  telefone : VARCHAR(20)
+  mercado : VARCHAR(100)
+  criado_em : TIMESTAMP
+  atualizado_em : TIMESTAMP
+}
+
+entity produtos {
+  +id : SERIAL
+  nome : VARCHAR(100)
+  categoria : VARCHAR(50)
+  criado_em : TIMESTAMP
+  atualizado_em : TIMESTAMP
+}
+
+entity vendedor_produtos {
+  +id : SERIAL
+  vendedor_id : INT
+  produto_id : INT
+  preco_medio : DECIMAL(10,2)
+  criado_em : TIMESTAMP
+  atualizado_em : TIMESTAMP
+}
+
+entity previsoes {
+  +id : SERIAL
+  vendedor_id : INT
+  produto_id : INT
+  data_previsao : DATE
+  quantidade_sugerida : DECIMAL(10,2)
+  confianca : DECIMAL(5,2)
+  motivo : TEXT
+  criado_em : TIMESTAMP
+}
+
+entity dados_clima {
+  +id : SERIAL
+  data : DATE
+  local : VARCHAR(100)
+  temperatura : DECIMAL(5,2)
+  descricao : VARCHAR(100)
+  humidade : INT
+  criado_em : TIMESTAMP
+  atualizado_em : TIMESTAMP
+}
+
+vendedores --{ vendedor_produtos : possui
+produtos  --{ vendedor_produtos : cadastrado em
+
+vendedores --{ previsoes : recebe
+produtos --{ previsoes : previstos
+
+@enduml
