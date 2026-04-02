@@ -1,0 +1,28 @@
+{
+  "name": "leena_assistant",
+  "version": "1.0.0",
+  "description": "Leena é uma assistente de vendas criada para apoiar comerciantes de mercados informais na decisão de compra para revenda. O foco é tornar decisões rápidas e assertivas, reduzindo desperdício e aumentando a margem.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/therakius/leena.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/therakius/leena/issues"
+  },
+  "homepage": "https://github.com/therakius/leena#readme",
+  "dependencies": {
+    "@whiskeysockets/baileys": "latest",
+    "dotenv": "^17.4.0",
+    "pg": "^8.20.0",
+    "qrcode": "^1.5.4"
+  }
+}
