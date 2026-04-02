@@ -1,6 +1,6 @@
 {
   "name": "leena_assistant",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Leena é uma assistente de vendas criada para apoiar comerciantes de mercados informais na decisão de compra para revenda. O foco é tornar decisões rápidas e assertivas, reduzindo desperdício e aumentando a margem.",
   "main": "index.js",
   "type": "module",
@@ -12,13 +12,15 @@
     "type": "git",
     "url": "git+https://github.com/therakius/leena.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "ai-agent, predictive-modeling, ai-commercial-real-estate"
+  ],
+  "author": "therakius, EstandarMustaq, IlsseZita the Wakanda Code",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/therakius/leena/issues"
   },
-  "homepage": "https://github.com/therakius/leena#readme",
+  "homepage": "https://leena-ai-lp.vercel.app",
   "dependencies": {
     "@whiskeysockets/baileys": "latest",
     "dotenv": "^17.4.0",
