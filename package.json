@@ -22,8 +22,11 @@
   },
   "homepage": "https://leena-ai-lp.vercel.app",
   "dependencies": {
+    "@google/genai": "^1.48.0",
     "@whiskeysockets/baileys": "latest",
     "dotenv": "^17.4.0",
+    "grok-sdk": "^0.0.1-security",
+    "groq-sdk": "^1.1.2",
     "pg": "^8.20.0",
     "qrcode": "^1.5.4"
   }
