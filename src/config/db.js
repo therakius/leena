@@ -7,3 +7,4 @@ const { Client: PGClient } = pkg;
 export const pg = new PGClient({
     connectionString: process.env.DATABASE_URL
 });
+// await pg.connect()
