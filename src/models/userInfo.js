@@ -13,9 +13,9 @@ export function getUserInfoQuery(number){
                 )
             )
         ) AS data
-        FROM vendedores v
-        INNER JOIN vendedor_produtos vp ON v.id = vp.vendedor_id
-        INNER JOIN produtos p ON p.id = vp.produto_id
+        FROM public.vendedores v
+        INNER JOIN public.vendedor_produtos vp ON v.id = vp.vendedor_id
+        INNER JOIN public.produtos p ON p.id = vp.produto_id
         WHERE v.telefone ILIKE '%' || $1 || '%'
         GROUP BY v.id, v.mercado;
         `,
