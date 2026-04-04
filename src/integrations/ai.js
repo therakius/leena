@@ -46,7 +46,7 @@ export async function ask(instruction, prompt) {
   } catch (err) {
     console.warn(`Gemini failed: ${err.message}. Falling back to Groq...`);
     const result = await askGroq(instruction, prompt);
-    console.log("Groq responded.");
+    console.log("Grok responded.");
     return result;
   }
 }
