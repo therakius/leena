@@ -2,6 +2,11 @@
 import { getSenderNumber } from "../../utils.js";
 import { userIsRegistered, registerUser } from "../services/registerService.js";
 import { registerProduct, assignProductUser} from "../services/productService.js";
+import { getUserInfo } from "../services/userInfoService.js";
+import { promptPredition,promptLocationByMarket } from "../config/messages.js";
+import { getNextHolyday } from "../integrations/holidays.js";
+import { getNextDayWeather } from "../integrations/weather.js";
+import {ask} from "../integrations/ai.js"
 
 const userState = {};
 const greetedUsers = {};
@@ -26,11 +31,38 @@ async function sendMenu(sock, jid, message) {
     await sock.sendMessage(jid, { text: MENU_TEXT }, { quoted: message });
 }
 
-async function handleMenuOption(sock, jid, message, option, userId) {
+async function handleMenuOption(sock, jid, message, option, userId, userPhoneNumber) {
     switch (option) {
         case "1":
+            console.log(`user phone number: ${userPhoneNumber}`)
+
+            const userInfo = await getUserInfo(userPhoneNumber)
+            const marketLocationPrompt = [promptLocationByMarket(userInfo.mercado).system, promptLocationByMarket(userInfo.mercado).prompt]
+
+            let marketCity = await ask(marketLocationPrompt[0], marketLocationPrompt[1])
+
+            marketCity = JSON.parse(marketCity)
+
+
+            const nextDayWeather = await getNextDayWeather(marketCity.location)
+
+            const nextHoliday = await getNextHolyday()
+
+            let data = {
+                "userInfo": userInfo,
+                "NextDayWeather": nextDayWeather,
+                "NextHolyday": nextHoliday
+            }
+
+            data = JSON.stringify(data)
+
+            let promptForPredition = [promptPredition(data).system, promptPredition(data).prompt]
+
+
+            const aiResponse = await ask(promptForPredition[0], promptForPredition[1])
+
             await sock.sendMessage(jid, {
-                text: "📈 *Previsão de Vendas*\n\nFuncionalidade em breve disponível! 🚧"
+                text: `📈 *Previsão e recomendação de Vendas*\n\n${aiResponse}`
             }, { quoted: message });
             await sendMenu(sock, jid, message);
             break;
@@ -119,11 +151,8 @@ export async function handleMessage(sock, message) {
         return;
     }
 
-    console.log(number);
-
     // 🔍 2. Verificar registro
     const registered = await userIsRegistered(number);
-    console.log(registered);
 
     // ======================================================
     // 🚀 ONBOARDING (só entra aqui se NÃO estiver registrado)
@@ -165,7 +194,6 @@ export async function handleMessage(sock, message) {
 
             const userData = { ...userState[userId], produtos, number };
 
-            console.log("Usuário completo:", userData);
 
             const user = await registerUser(userData.nome, userData.number, userData.mercado);
 
@@ -193,6 +221,8 @@ export async function handleMessage(sock, message) {
     // ======================================================
     if (registered) {
 
+        const userNumber = registered.telefone;
+
         // If user was idle or returning, show menu on first contact
         if (!userState[userId] || userState[userId].step === "IDLE") {
             userState[userId] = { step: "IN_MENU" };
@@ -202,7 +232,7 @@ export async function handleMessage(sock, message) {
 
         // Handle menu option selection
         if (userState[userId].step === "IN_MENU") {
-            await handleMenuOption(sock, jid, message, text, userId);
+            await handleMenuOption(sock, jid, message, text, userId, userNumber);
             return;
         }
     }
