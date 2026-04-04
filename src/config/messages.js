@@ -2,8 +2,11 @@
 export function promptLocationByMarket(market){
     return {
         system: `voce é um especialista em mercados de mocambique. mais precisamente mem dizer onde mercados expecificos localizam-se. ao ser perguntado, voce so responde com a localisacao, com json valido. exemplo: {"location": "cidade"}`,
-        prompt: `onde se localiza o mercado de ${market}`
-    }
+        prompt: `onde se localiza o mercado de ${market}
+        responda sempre com json valido, no formato:
+        {"location": "cidade"}
+
+        `}
 }
 
 export function promptPredition(data){
@@ -25,6 +28,16 @@ export function promptPredition(data){
         PS: use emojis e palavras em negrito para ficar mais natural. Ao destacar, lembre-se que as mensagens sao pra ser enviadas por whatsapp, entao duplo * para destacar nao funciona. considere isso para outros aspectos tambem.
         `,
 
-        prompt: data
+        prompt: `
+        ${data}
+
+        ---
+
+        Ao responder, nao use markdown, nao use identificadores tecnicos (como por exemplo id do produto, id do vendedor).
+        A sua resposta sera repartilhada para o whatsap do vendedor. se analisares e pensares que precisaras de destacar certas palavras, use a sintaxe do whartsapp.
+
+        inclua titulos (usando *), listas (usando *) e emojis, para melhor compreesao. destaque os dados importantes, e de sugestoes detalhadas, considerando todos os dados fornecidos.
+        
+        `
         }
 }
