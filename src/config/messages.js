@@ -58,3 +58,21 @@ export function extractNameFromTextPrompt(text){
                 `
         }
 }
+
+export function extractMarketFromTextPrompt(text){
+
+        return {
+                system: "voce é uma IA especializada em extrair nomes de mercados de textos fornecidos a ti por prompts",
+                prompt: `
+                texto: ${text}
+
+                ---
+                extraia o nome proprio desse texto, e coloque-o num json valido com a chave 'market'.
+                se o texto possui varios nomes, use somente o primeiro.
+
+                nao expliques nada, somente responda com o json.
+                so responda com json, nao inclua ele na resposta usando sintaxe do markdown
+
+                `
+        }
+}
