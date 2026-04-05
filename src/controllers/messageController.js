@@ -221,10 +221,8 @@ export async function handleMessage(sock, message) {
                     extractNameFromTextPrompt(text).prompt
                 );
 
-                // tenta transformar em objeto JSON
                 extractedName = JSON.parse(extractedName);
 
-                // se tudo deu certo, salva o nome e avança o passo
                 userState[userId] = { step: "ASK_MARKET", nome: extractedName.name || text };
 
                 console.log(`extracted name: ${extractedName.name || text}`);
