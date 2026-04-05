@@ -3,7 +3,7 @@ import { getSenderNumber } from "../../utils.js";
 import { userIsRegistered, registerUser } from "../services/registerService.js";
 import { registerProduct, assignProductUser} from "../services/productService.js";
 import { getUserInfo } from "../services/userInfoService.js";
-import { promptPredition,promptLocationByMarket } from "../config/messages.js";
+import { promptPredition,promptLocationByMarket,extractMarketFromTextPrompt, extractNameFromTextPrompt } from "../config/messages.js";
 import { getNextHolyday } from "../integrations/holidays.js";
 import { getNextDayWeather } from "../integrations/weather.js";
 import {ask} from "../integrations/ai.js"
@@ -213,21 +213,66 @@ export async function handleMessage(sock, message) {
         }
 
         if (userState[userId].step === "ASK_NAME") {
-            userState[userId] = { step: "ASK_MARKET", nome: text };
+            let extractedName;
 
-            await sock.sendMessage(jid, {
-                text: `🤝 Prazer em te conhecer, ${text}! 🧑‍🌾\n📍 Onde você costuma vender? (nome do mercado)`
-            }, { quoted: message });
+            try {
+                extractedName = await ask(
+                    extractNameFromTextPrompt(text).system,
+                    extractNameFromTextPrompt(text).prompt
+                );
+
+                // tenta transformar em objeto JSON
+                extractedName = JSON.parse(extractedName);
+
+                // se tudo deu certo, salva o nome e avança o passo
+                userState[userId] = { step: "ASK_MARKET", nome: extractedName.name || text };
+
+                console.log(`extracted name: ${extractedName.name || text}`);
+
+                await sock.sendMessage(jid, {
+                    text: `🤝 Prazer em te conhecer, ${extractedName.name || text}! 🧑‍🌾\n📍 Onde você costuma vender? (nome do mercado)`
+                }, { quoted: message });
+
+            } catch (error) {
+                console.error('An error occurred:', error);
+
+                userState[userId] = { step: "ASK_NAME" };
+
+                await sock.sendMessage(jid, {
+                    text: "Algo correu mal😢. Por favor, envie seu nome novamente."
+                });
+            }
 
             return;
         }
 
         if (userState[userId].step === "ASK_MARKET") {
-            userState[userId] = { ...userState[userId], step: "ASK_PRODUCTS", mercado: text };
 
-            await sock.sendMessage(jid, {
-                text: `🏪 Perfeito!\n🛒 Quais produtos você vende?\n✍️ Lista separados por vírgula.\nEx: tomate, cebola, alho`
-            }, { quoted: message });
+            let extractedMarket;
+
+            try {
+                extractedMarket = await ask(
+                    extractMarketFromTextPrompt(text).system,
+                    extractMarketFromTextPrompt(text).prompt
+                )
+
+                extractedMarket = JSON.parse(extractedMarket)
+
+                userState[userId] = { ...userState[userId], step: "ASK_PRODUCTS", mercado: extractedMarket.market || text };
+
+                await sock.sendMessage(jid, {
+                    text: `🏪 Perfeito!\n🛒 Quais produtos você vende?\n✍️ Lista separados por vírgula.\nEx: tomate, cebola, alho`
+                }, { quoted: message });
+
+            } catch (error) {
+                console.error('An error occurred:', error);
+
+                userState[userId] = { step: "ASK_MARKET" };
+
+                await sock.sendMessage(jid, {
+                    text: "Algo correu mal😢. Por favor, envie o nome do mercado novamente."
+                });
+            }
 
             return;
         }
