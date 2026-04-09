@@ -1,24 +1,33 @@
 export function getUserInfoQuery(number){
     return {
         text: `
-            SELECT json_build_object(
-            'vendedor_id', v.id,
-            'mercado', v.mercado,
-            'produtos', json_agg(
+            select json_build_object(
+
+            'vendedor', json_build_object(
+                'nome', v.nome,
+                'telefone', v.telefone,
+                'mercado', v.mercado,
+                'localizacao', v.localizacao
+            ),
+
+            'produtos_vendidos', json_agg(
                 json_build_object(
-                    'produto_id', p.id,
-                    'nome', p.nome,
-                    'categoria', p.categoria,
-                    'preco_medio', vp.preco_medio
+                    'nome_do_produto', p.nome,
+                    'preco_medio', vp.preco_medio,
+                    'stock_corrente', vp.stock_atual
                 )
-            )
-        ) AS data
-        FROM public.vendedores v
-        INNER JOIN public.vendedor_produtos vp ON v.id = vp.vendedor_id
-        INNER JOIN public.produtos p ON p.id = vp.produto_id
-        WHERE v.telefone ILIKE '%' || $1 || '%'
-        GROUP BY v.id, v.mercado;
-        `,
+            ),
+            'data_de_adesao', v.criado_em::date,
+            'ultima_atualizacao', v.atualizado_em::date
+            
+            ) as data
+            from public.vendedores as v
+            left join public.vendedor_produtos as vp on vp.vendedor_id = v.id
+            left join public.produtos as p on p.id = vp.produto_id
+            WHERE v.telefone ILIKE '%' || $1 || '%'
+            group by v.nome, v.telefone, v.mercado, v.localizacao, v.criado_em, v.atualizado_em;
+    
+    `,
         values: [number]
     }
 
