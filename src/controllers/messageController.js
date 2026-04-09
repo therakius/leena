@@ -3,7 +3,7 @@ import { getSenderNumber } from "../../utils.js";
 import { userIsRegistered, registerUser } from "../services/registerService.js";
 import { registerProduct, assignProductUser} from "../services/productService.js";
 import { getUserInfo } from "../services/userInfoService.js";
-import { promptPredition,promptLocationByMarket,extractMarketFromTextPrompt, extractNameFromTextPrompt } from "../config/messages.js";
+import { promptPredition,promptLocationByMarket,extractMarketFromTextPrompt, extractNameFromTextPrompt, createComprehensiveProfile } from "../config/messages.js";
 import { getNextHolyday } from "../integrations/holidays.js";
 import { getNextDayWeather } from "../integrations/weather.js";
 import {ask} from "../integrations/ai.js"
@@ -41,7 +41,7 @@ async function handleMenuOption(sock, jid, message, option, userId, userPhoneNum
             }, {quoted: message})
             
             const userInfo = await getUserInfo(userPhoneNumber)
-            const marketLocationPrompt = [promptLocationByMarket(userInfo.mercado).system, promptLocationByMarket(userInfo.mercado).prompt]
+            const marketLocationPrompt = [promptLocationByMarket(userInfo.vendedor.mercado).system, promptLocationByMarket(userInfo.vendedor.mercado).prompt]
 
             let marketCity = await ask(marketLocationPrompt[0], marketLocationPrompt[1])
 
@@ -63,7 +63,7 @@ async function handleMenuOption(sock, jid, message, option, userId, userPhoneNum
             const aiResponse = await ask(promptForPredition[0], promptForPredition[1])
 
             await sock.sendMessage(jid, {
-                text: `📈 *Previsão e recomendação de Vendas*\n\n${aiResponse}`
+                text: `${aiResponse}`
             }, { quoted: message });
 
             await sock.sendMessage(jid, {
@@ -96,7 +96,16 @@ async function handleMenuOption(sock, jid, message, option, userId, userPhoneNum
 
         case "4":
             await sock.sendMessage(jid, {
-                text: "👤 *Ver Perfil*\n\n🚧 Funcionalidade em breve disponível!"
+                text: "⏳ Por favor aguarda um instante ..."
+            }, {quoted: message})
+
+
+            let user = await getUserInfo(userPhoneNumber)
+            user = JSON.stringify(user)
+            const userProfile = await ask(createComprehensiveProfile(user).system, createComprehensiveProfile(user).prompt)
+            
+            await sock.sendMessage(jid, {
+                text: `${userProfile}`
             }, { quoted: message });
 
             await sock.sendMessage(jid, {

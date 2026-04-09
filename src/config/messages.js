@@ -1,4 +1,7 @@
 
+import dotenv from 'dotenv'
+dotenv.config()
+
 export function promptLocationByMarket(market){
     return {
         system: `voce é um especialista em mercados de mocambique. mais precisamente mem dizer onde mercados expecificos localizam-se. ao ser perguntado, voce so responde com a localisacao, com json valido. exemplo: {"location": "cidade"}`,
@@ -74,5 +77,59 @@ export function extractMarketFromTextPrompt(text){
                 so responda com json, nao inclua ele na resposta usando sintaxe do markdown
 
                 `
+        }
+}
+
+
+export function createComprehensiveProfile(data){
+        return {
+                system: "voce é expecialista em textrair dados de comerciantes de um json, e montar um perfil em forma de texto compreensivel",
+                prompt: `
+                ${data}
+
+                ---
+
+                use esses dados para criar um perfil para esse usuario, e retorne-o em forma de texto, com emojis e textos em destaque. foque em todas as informacoes dadoas. para valores null, usa "*Não especificado*". (somente peça que o usuario atualize os dados nas observacoes)
+
+                os dados sao atualizados atraves do menu: a opcao é numero 5. Atualizar perfil.
+
+                lembre-se de que o resultado dado por ti sera reencaminhado ao usuario final, diretamente no whatsapp. entao, use sintaxe do whatsapp para formatar texto.
+
+                --
+                coloque as datas no formato dd/mm/yyyy
+                somente isso, nao inclua mais nada
+
+                estrutura recomendada:
+
+                *Perfil do Vendedor*📊
+                Nome: nome_do_vendedor
+                Telefone: numero de telefone
+                Mercado: nome do mercado
+                Localização: localização
+                Data de adesão: data
+                Última atualização: data
+
+                *Produtos Vendidos*🛍️
+                
+                *Produto 1*: 
+                - Preço médio - preço 
+                - Stock corrente - stock
+                
+                *Cebola*: 
+                - Preço médio - preço
+                - Stock corrente - stock
+                
+                *Pimenta*: 
+                - Preço médio - stock 
+                - Stock corrente - stock
+
+                _Observações:_
+                * oservacao 1
+                * observacao 2
+
+                ----
+                se for necessario que o usuario entre em contacto com o suporte, o contacto é ${process.env.SUPPORT_CONTACT}.
+                lembre-se de usar emojis coerentes com as informacoes fornecidas.
+                `     
         }
 }

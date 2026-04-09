@@ -14,6 +14,7 @@ entity vendedores {
   nome : VARCHAR(100)
   telefone : VARCHAR(20)
   mercado : VARCHAR(100)
+  localizacao : varchar(100)
   criado_em : TIMESTAMP
   atualizado_em : TIMESTAMP
 }
@@ -29,8 +30,9 @@ entity produtos {
 entity vendedor_produtos {
   +id : SERIAL
   vendedor_id : INT
-  produto_id : INT
   preco_medio : DECIMAL(10,2)
+  stock_atual : NUMERIC
+  unidade_de_medida: TEXT
   criado_em : TIMESTAMP
   atualizado_em : TIMESTAMP
 }
@@ -40,7 +42,7 @@ entity previsoes {
   vendedor_id : INT
   produto_id : INT
   data_previsao : DATE
-  quantidade_sugerida : DECIMAL(10,2)
+  quantidade_sugerida : jsonb
   confianca : DECIMAL(5,2)
   motivo : TEXT
   criado_em : TIMESTAMP
@@ -61,6 +63,6 @@ vendedores --{ vendedor_produtos : possui
 produtos  --{ vendedor_produtos : cadastrado em
 
 vendedores --{ previsoes : recebe
-produtos --{ previsoes : previstos
+' produtos --{ previsoes : previstos
 
 @enduml
