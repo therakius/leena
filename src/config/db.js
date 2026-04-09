@@ -5,7 +5,7 @@ dotenv.config();
 const { Client: PGClient } = pkg;
 
 export const pg = new PGClient({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.LOCAL_DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
@@ -22,3 +22,5 @@ export const startHeartbeat = (intervalMs = 4 * 60 * 1000) => {
     }
   }, intervalMs);
 };
+// await pg.connect()
+// console.log("connected to the database")
