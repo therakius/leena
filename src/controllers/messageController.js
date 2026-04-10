@@ -1,12 +1,22 @@
 // src/controllers/messageController.js
 import { getSenderNumber } from "../../utils.js";
 import { userIsRegistered, registerUser } from "../services/registerService.js";
-import { registerProduct, assignProductUser} from "../services/productService.js";
-import { getUserInfo } from "../services/userInfoService.js";
-import { promptPredition,promptLocationByMarket,extractMarketFromTextPrompt, extractNameFromTextPrompt, createComprehensiveProfile } from "../config/messages.js";
+import {
+  registerProduct,
+  assignProductUser,
+} from "../services/productService.js";
+import { getUserInfo, getBasicInfoUser, updateUserName, updateUserMarket, updateUserLocation } from "../services/userInfoService.js";
+import {
+  promptPredition,
+  promptLocationByMarket,
+  extractMarketFromTextPrompt,
+  extractNameFromTextPrompt,
+  createComprehensiveProfile,
+} from "../config/messages.js";
 import { getNextHolyday } from "../integrations/holidays.js";
 import { getNextDayWeather } from "../integrations/weather.js";
-import {ask} from "../integrations/ai.js"
+import { ask } from "../integrations/ai.js";
+import { updateProfileMenu } from "../config/menu.js";
 
 const userState = {};
 const greetedUsers = {};
@@ -28,309 +38,625 @@ _Responde com o número da opção desejada._
 `.trim();
 
 async function sendMenu(sock, jid, message) {
-    await sock.sendMessage(jid, { text: MENU_TEXT }, { quoted: message });
+  await sock.sendMessage(jid, { text: MENU_TEXT }, { quoted: message });
 }
 
-async function handleMenuOption(sock, jid, message, option, userId, userPhoneNumber) {
-    switch (option) {
-        case "1":
-            console.log(`user phone number: ${userPhoneNumber}`)
+async function handleProfileUpdateFlow(
+  sock,
+  jid,
+  message,
+  text,
+  userId,
+  userPhoneNumber,
+) {
+  if (userState[userId].step === "UPDATE_PROFILE_MENU") {
+    if (text === "1") {
+      userState[userId] = { step: "UPDATE_NAME" };
 
-            await sock.sendMessage(jid, {
-                text: "⏳ A analisar dados... aguarda um instante 📊"
-            }, {quoted: message})
-            
-            const userInfo = await getUserInfo(userPhoneNumber)
-            const marketLocationPrompt = [promptLocationByMarket(userInfo.vendedor.mercado).system, promptLocationByMarket(userInfo.vendedor.mercado).prompt]
+      await sock.sendMessage(
+        jid,
+        {
+          text: "✏️ Digite o novo nome:",
+        },
+        { quoted: message },
+      );
 
-            let marketCity = await ask(marketLocationPrompt[0], marketLocationPrompt[1])
-
-            marketCity = JSON.parse(marketCity)
-
-            const nextDayWeather = await getNextDayWeather(marketCity.location)
-            const nextHoliday = await getNextHolyday()
-
-            let data = {
-                "userInfo": userInfo,
-                "NextDayWeather": nextDayWeather,
-                "NextHolyday": nextHoliday
-            }
-
-            data = JSON.stringify(data)
-
-            let promptForPredition = [promptPredition(data).system, promptPredition(data).prompt]
-
-            const aiResponse = await ask(promptForPredition[0], promptForPredition[1])
-
-            await sock.sendMessage(jid, {
-                text: `${aiResponse}`
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "2":
-            await sock.sendMessage(jid, {
-                text: "📊 *Histórico de Vendas*\n\n🚧 Funcionalidade em breve disponível!"
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "3":
-            await sock.sendMessage(jid, {
-                text: "✏️ *Atualizar Histórico de Vendas*\n\n🚧 Funcionalidade em breve disponível!"
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "4":
-            await sock.sendMessage(jid, {
-                text: "⏳ Por favor aguarda um instante ..."
-            }, {quoted: message})
-
-
-            let user = await getUserInfo(userPhoneNumber)
-            user = JSON.stringify(user)
-            const userProfile = await ask(createComprehensiveProfile(user).system, createComprehensiveProfile(user).prompt)
-            
-            await sock.sendMessage(jid, {
-                text: `${userProfile}`
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "5":
-            await sock.sendMessage(jid, {
-                text: "🔧 *Atualizar Perfil*\n\n🚧 Funcionalidade em breve disponível!"
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "6":
-            await sock.sendMessage(jid, {
-                text: `❓ *Ajuda*\n\n🤖 Sou a *Leena*, a tua assistente de vendas! 😊\n\nPodes usar o menu para:\n• 📈 Ver previsões\n• 📊 Ver histórico de vendas\n• 👤 Gerir o teu perfil\n\nSe tiveres dúvidas, fala comigo! 💬`
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            break;
-
-        case "7":
-            userState[userId] = { step: "IDLE" };
-            await sock.sendMessage(jid, {
-                text: "👋 Até logo! Estarei por aqui quando precisares 😊"
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text:"📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-            break;
-
-        default:
-            await sock.sendMessage(jid, {
-                text: "❌ Opção inválida.\n👉 Escolhe um número de *1 a 7*."
-            }, { quoted: message });
-            break;
+      return;
     }
+
+    if (text === "2") {
+      userState[userId] = { step: "UPDATE_MARKET" };
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "🏪 Digite o novo mercado:",
+        },
+        { quoted: message },
+      );
+
+      return;
+    }
+
+    if (text === "3") {
+      userState[userId] = { step: "UPDATE_LOCATION" };
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📍 Digite a nova localização:",
+        },
+        { quoted: message },
+      );
+
+      return;
+    }
+
+    if (text === "4") {
+      userState[userId] = { step: "IN_MENU" };
+      await sendMenu(sock, jid, message);
+      return;
+    }
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: "❌ Opção inválida. Escolhe de 1 a 4.",
+      },
+      { quoted: message },
+    );
+
+    return;
+  }
+
+  if (userState[userId].step === "UPDATE_NAME") {
+    await updateUserName(userPhoneNumber, text);
+
+    userState[userId] = { step: "CONFIRM_UPDATE_PROFILE" };
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: `✅ Nome atualizado com sucesso!
+
+            Deseja fazer mais atualizações?
+
+            1️⃣ Sim
+            2️⃣ Não
+
+            _ou escreva m para menu_`,
+      },
+      { quoted: message },
+    );
+
+    return;
+  }
+
+  if (userState[userId].step === "UPDATE_MARKET") {
+    await updateUserMarket(userPhoneNumber, text);
+
+    userState[userId] = { step: "CONFIRM_UPDATE_PROFILE" };
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: `✅ Mercado atualizado com sucesso!
+
+            Deseja fazer mais atualizações?
+
+            1️⃣ Sim
+            2️⃣ Não
+
+            _ou escreva m para menu_`,
+      },
+      { quoted: message },
+    );
+
+    return;
+  }
+
+  if (userState[userId].step === "UPDATE_LOCATION") {
+    await updateUserLocation(userPhoneNumber, text);
+
+    userState[userId] = { step: "CONFIRM_UPDATE_PROFILE" };
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: `✅ Localização atualizada com sucesso!
+
+            Deseja fazer mais atualizações?
+
+            1️⃣ Sim
+            2️⃣ Não
+
+            _ou escreva m para menu_`,
+      },
+      { quoted: message },
+    );
+
+    return;
+  }
+
+  if (userState[userId].step === "CONFIRM_UPDATE_PROFILE") {
+    const normalized = text.toLowerCase();
+
+    if (text === "1") {
+      const userUpdateMenu = await getBasicInfoUser(userPhoneNumber);
+      const menu = updateProfileMenu(userUpdateMenu);
+
+      userState[userId] = { step: "UPDATE_PROFILE_MENU" };
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: `${menu}`,
+        },
+        { quoted: message },
+      );
+
+      return;
+    }
+
+    if (text === "2") {
+      userState[userId] = { step: "AWAITING_MENU_TRIGGER" };
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📋 Escreve *menu* ou *m* para ver mais opções ...",
+        },
+        { quoted: message },
+      );
+
+      return;
+    }
+
+    if (normalized === "m" || normalized === "menu") {
+      userState[userId] = { step: "IN_MENU" };
+      await sendMenu(sock, jid, message);
+      return;
+    }
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: "❌ Opção inválida. Escolhe 1, 2 ou escreve *m*.",
+      },
+      { quoted: message },
+    );
+
+    return;
+  }
+}
+
+async function handleMenuOption(
+  sock,
+  jid,
+  message,
+  option,
+  userId,
+  userPhoneNumber,
+) {
+  switch (option) {
+    case "1":
+      console.log(`user phone number: ${userPhoneNumber}`);
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "⏳ A analisar dados... aguarda um instante 📊",
+        },
+        { quoted: message },
+      );
+
+      const userInfo = await getUserInfo(userPhoneNumber);
+      const marketLocationPrompt = [
+        promptLocationByMarket(userInfo.vendedor.mercado).system,
+        promptLocationByMarket(userInfo.vendedor.mercado).prompt,
+      ];
+
+      let marketCity = await ask(
+        marketLocationPrompt[0],
+        marketLocationPrompt[1],
+      );
+
+      marketCity = JSON.parse(marketCity);
+
+      const nextDayWeather = await getNextDayWeather(marketCity.location);
+      const nextHoliday = await getNextHolyday();
+
+      let data = {
+        userInfo: userInfo,
+        NextDayWeather: nextDayWeather,
+        NextHolyday: nextHoliday,
+      };
+
+      data = JSON.stringify(data);
+
+      let promptForPredition = [
+        promptPredition(data).system,
+        promptPredition(data).prompt,
+      ];
+
+      const aiResponse = await ask(
+        promptForPredition[0],
+        promptForPredition[1],
+      );
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: `${aiResponse}`,
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      break;
+
+    case "2":
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📊 *Histórico de Vendas*\n\n🚧 Funcionalidade em breve disponível!",
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      break;
+
+    case "3":
+      await sock.sendMessage(
+        jid,
+        {
+          text: "✏️ *Atualizar Histórico de Vendas*\n\n🚧 Funcionalidade em breve disponível!",
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      break;
+
+    case "4":
+      await sock.sendMessage(
+        jid,
+        {
+          text: "⏳ Por favor aguarda um instante ...",
+        },
+        { quoted: message },
+      );
+
+      let user = await getUserInfo(userPhoneNumber);
+      user = JSON.stringify(user);
+      const userProfile = await ask(
+        createComprehensiveProfile(user).system,
+        createComprehensiveProfile(user).prompt,
+      );
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: `${userProfile}`,
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      break;
+
+    case "5":
+      {
+        const userUpdateMenu = await getBasicInfoUser(userPhoneNumber);
+        const menu = updateProfileMenu(userUpdateMenu);
+
+        userState[userId] = { step: "UPDATE_PROFILE_MENU" };
+
+        await sock.sendMessage(
+          jid,
+          {
+            text: `${menu}`,
+          },
+          { quoted: message },
+        );
+      }
+      return;
+
+    case "6":
+      await sock.sendMessage(
+        jid,
+        {
+          text: `❓ *Ajuda*\n\n🤖 Sou a *Leena*, a tua assistente de vendas! 😊\n\nPodes usar o menu para:\n• 📈 Ver previsões\n• 📊 Ver histórico de vendas\n• 👤 Gerir o teu perfil\n\nSe tiveres dúvidas, fala comigo! 💬`,
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      break;
+
+    case "7":
+      userState[userId] = { step: "IDLE" };
+      await sock.sendMessage(
+        jid,
+        {
+          text: "👋 Até logo! Estarei por aqui quando precisares 😊",
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+      break;
+
+    default:
+      await sock.sendMessage(
+        jid,
+        {
+          text: "❌ Opção inválida.\n👉 Escolhe um número de *1 a 7*.",
+        },
+        { quoted: message },
+      );
+      break;
+  }
 }
 
 export async function handleMessage(sock, message) {
-    if (!message.message) return;
-    if (message.key.fromMe) return;
+  if (!message.message) return;
+  if (message.key.fromMe) return;
 
-    const text = (
-        message.message.conversation
-        || message.message.extendedTextMessage?.text
-        || ''
-    ).trim();
+  const text = (
+    message.message.conversation ||
+    message.message.extendedTextMessage?.text ||
+    ""
+  ).trim();
 
-    if (!text) return;
+  if (!text) return;
 
-    const jid = message.key.remoteJid;
-    const number = getSenderNumber(message);
-    const userId = number || jid;
+  const jid = message.key.remoteJid;
+  const number = getSenderNumber(message);
+  const userId = number || jid;
 
-    // 👋 Saudação inicial
-    if (!greetedUsers[userId]) {
-        greetedUsers[userId] = true;
+  // 👋 Saudação inicial
+  if (!greetedUsers[userId]) {
+    greetedUsers[userId] = true;
 
-        await sock.sendMessage(jid, {
-            text: "👋 Olá! Eu sou a *Leena* 😊\n🤝 Vou te ajudar a organizar os teus produtos e vendas."
-        }, { quoted: message });
-    }
+    await sock.sendMessage(
+      jid,
+      {
+        text: "👋 Olá! Eu sou a *Leena* 😊\n🤝 Vou te ajudar a organizar os teus produtos e vendas.",
+      },
+      { quoted: message },
+    );
+  }
 
-    // 🚨 1. Garantir número
-    if (!number) {
-        await sock.sendMessage(jid, {
-            text: "⚠️ Não consegui identificar o teu número 🤔\n📱 Podes enviar manualmente? (ex: 2588XXXXXXX)"
-        }, { quoted: message });
-        return;
-    }
+  // 🚨 1. Garantir número
+  if (!number) {
+    await sock.sendMessage(
+      jid,
+      {
+        text: "⚠️ Não consegui identificar o teu número 🤔\n📱 Podes enviar manualmente? (ex: 2588XXXXXXX)",
+      },
+      { quoted: message },
+    );
+    return;
+  }
 
-    const normalizedText = text.toLowerCase();
+  const normalizedText = text.toLowerCase();
 
-    // 🎯 GLOBAL MENU TRIGGER
-    if (normalizedText === "m" || normalizedText === "menu") {
-
-        const registered = await userIsRegistered(number);
-
-        if (!registered) {
-            await sock.sendMessage(jid, {
-                text: "🛠️ Ainda estamos a configurar o teu perfil 😊\n👉 Responde às perguntas primeiro 👍"
-            }, { quoted: message });
-            return;
-        }
-
-        userState[userId] = { step: "IN_MENU" };
-        await sendMenu(sock, jid, message);
-        return;
-    }
-
+  // 🎯 GLOBAL MENU TRIGGER
+  if (normalizedText === "m" || normalizedText === "menu") {
     const registered = await userIsRegistered(number);
 
     if (!registered) {
-
-        if (!userState[userId]) {
-            userState[userId] = { step: "ASK_NAME" };
-
-            await sock.sendMessage(jid, {
-                text: '😊 Antes de começarmos, quero te conhecer melhor!\n👉 Como posso te chamar?'
-            }, { quoted: message });
-
-            return;
-        }
-
-        if (userState[userId].step === "ASK_NAME") {
-            let extractedName;
-
-            try {
-                extractedName = await ask(
-                    extractNameFromTextPrompt(text).system,
-                    extractNameFromTextPrompt(text).prompt
-                );
-
-                extractedName = JSON.parse(extractedName);
-
-                userState[userId] = { step: "ASK_MARKET", nome: extractedName.name || text };
-
-                console.log(`extracted name: ${extractedName.name || text}`);
-
-                await sock.sendMessage(jid, {
-                    text: `🤝 Prazer em te conhecer, ${extractedName.name || text}! 🧑‍🌾\n📍 Onde você costuma vender? (nome do mercado)`
-                }, { quoted: message });
-
-            } catch (error) {
-                console.error('An error occurred:', error);
-
-                userState[userId] = { step: "ASK_NAME" };
-
-                await sock.sendMessage(jid, {
-                    text: "Algo correu mal😢. Por favor, envie seu nome novamente."
-                });
-            }
-
-            return;
-        }
-
-        if (userState[userId].step === "ASK_MARKET") {
-
-            let extractedMarket;
-
-            try {
-                extractedMarket = await ask(
-                    extractMarketFromTextPrompt(text).system,
-                    extractMarketFromTextPrompt(text).prompt
-                )
-
-                extractedMarket = JSON.parse(extractedMarket)
-
-                userState[userId] = { ...userState[userId], step: "ASK_PRODUCTS", mercado: extractedMarket.market || text };
-
-                await sock.sendMessage(jid, {
-                    text: `🏪 Perfeito!\n🛒 Quais produtos você vende?\n✍️ Lista separados por vírgula.\nEx: tomate, cebola, alho`
-                }, { quoted: message });
-
-            } catch (error) {
-                console.error('An error occurred:', error);
-
-                userState[userId] = { step: "ASK_MARKET" };
-
-                await sock.sendMessage(jid, {
-                    text: "Algo correu mal😢. Por favor, envie o nome do mercado novamente."
-                });
-            }
-
-            return;
-        }
-
-        if (userState[userId].step === "ASK_PRODUCTS") {
-            const produtos = text.split(',').map(p => p.trim());
-
-            const userData = { ...userState[userId], produtos, number };
-
-            const user = await registerUser(userData.nome, userData.number, userData.mercado);
-            const savedProducts = await registerProduct(userData.produtos)
-            const assignProductToUser = await assignProductUser(user.id, savedProducts)
-
-            delete userState[userId];
-
-            await sock.sendMessage(jid, {
-                text: `🎉 Cadastro concluído!\n\n👤 Nome: ${userData.nome}\n🏪 Mercado: ${userData.mercado}\n🛒 Produtos: ${produtos.join(', ')}\n\n👍 Sempre que precisares, estou aqui!`
-            }, { quoted: message });
-
-            await sock.sendMessage(jid, {
-                text: "📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            })
-
-            return;
-        }
+      await sock.sendMessage(
+        jid,
+        {
+          text: "🛠️ Ainda estamos a configurar o teu perfil 😊\n👉 Responde às perguntas primeiro 👍",
+        },
+        { quoted: message },
+      );
+      return;
     }
 
-    if (registered) {
+    userState[userId] = { step: "IN_MENU" };
+    await sendMenu(sock, jid, message);
+    return;
+  }
 
-        const userNumber = registered.telefone;
+  const registered = await userIsRegistered(number);
 
-        if (!userState[userId] || userState[userId].step === "IDLE") {
-            userState[userId] = { step: "AWAITING_MENU_TRIGGER" };
+  if (!registered) {
+    if (!userState[userId]) {
+      userState[userId] = { step: "ASK_NAME" };
 
-            await sock.sendMessage(jid, {
-                text: "📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            }, { quoted: message });
+      await sock.sendMessage(
+        jid,
+        {
+          text: "😊 Antes de começarmos, quero te conhecer melhor!\n👉 Como posso te chamar?",
+        },
+        { quoted: message },
+      );
 
-            return;
-        }
-
-        if (userState[userId].step === "IN_MENU") {
-            await handleMenuOption(sock, jid, message, text, userId, userNumber);
-            return;
-        }
-
-        if (userState[userId].step === "AWAITING_MENU_TRIGGER") {
-            await sock.sendMessage(jid, {
-                text: "📋 Escreve *menu* ou *m* para ver  mais opções ..."
-            }, { quoted: message });
-            return;
-        }
+      return;
     }
+
+    if (userState[userId].step === "ASK_NAME") {
+      let extractedName;
+
+      try {
+        extractedName = await ask(
+          extractNameFromTextPrompt(text).system,
+          extractNameFromTextPrompt(text).prompt,
+        );
+
+        extractedName = JSON.parse(extractedName);
+
+        userState[userId] = {
+          step: "ASK_MARKET",
+          nome: extractedName.name || text,
+        };
+
+        console.log(`extracted name: ${extractedName.name || text}`);
+
+        await sock.sendMessage(
+          jid,
+          {
+            text: `🤝 Prazer em te conhecer, ${extractedName.name || text}! 🧑‍🌾\n📍 Onde você costuma vender? (nome do mercado)`,
+          },
+          { quoted: message },
+        );
+      } catch (error) {
+        console.error("An error occurred:", error);
+
+        userState[userId] = { step: "ASK_NAME" };
+
+        await sock.sendMessage(jid, {
+          text: "Algo correu mal😢. Por favor, envie seu nome novamente.",
+        });
+      }
+
+      return;
+    }
+
+    if (userState[userId].step === "ASK_MARKET") {
+      let extractedMarket;
+
+      try {
+        extractedMarket = await ask(
+          extractMarketFromTextPrompt(text).system,
+          extractMarketFromTextPrompt(text).prompt,
+        );
+
+        extractedMarket = JSON.parse(extractedMarket);
+
+        userState[userId] = {
+          ...userState[userId],
+          step: "ASK_PRODUCTS",
+          mercado: extractedMarket.market || text,
+        };
+
+        await sock.sendMessage(
+          jid,
+          {
+            text: `🏪 Perfeito!\n🛒 Quais produtos você vende?\n✍️ Lista separados por vírgula.\nEx: tomate, cebola, alho`,
+          },
+          { quoted: message },
+        );
+      } catch (error) {
+        console.error("An error occurred:", error);
+
+        userState[userId] = { step: "ASK_MARKET" };
+
+        await sock.sendMessage(jid, {
+          text: "Algo correu mal😢. Por favor, envie o nome do mercado novamente.",
+        });
+      }
+
+      return;
+    }
+
+    if (userState[userId].step === "ASK_PRODUCTS") {
+      const produtos = text.split(",").map((p) => p.trim());
+
+      const userData = { ...userState[userId], produtos, number };
+
+      const user = await registerUser(
+        userData.nome,
+        userData.number,
+        userData.mercado,
+      );
+      const savedProducts = await registerProduct(userData.produtos);
+      const assignProductToUser = await assignProductUser(
+        user.id,
+        savedProducts,
+      );
+
+      delete userState[userId];
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: `🎉 Cadastro concluído!\n\n👤 Nome: ${userData.nome}\n🏪 Mercado: ${userData.mercado}\n🛒 Produtos: ${produtos.join(", ")}\n\n👍 Sempre que precisares, estou aqui!`,
+        },
+        { quoted: message },
+      );
+
+      await sock.sendMessage(jid, {
+        text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+      });
+
+      return;
+    }
+  }
+
+  if (registered) {
+    const userNumber = registered.telefone;
+
+    if (!userState[userId] || userState[userId].step === "IDLE") {
+      userState[userId] = { step: "AWAITING_MENU_TRIGGER" };
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+        },
+        { quoted: message },
+      );
+
+      return;
+    }
+
+    if (
+      [
+        "UPDATE_PROFILE_MENU",
+        "UPDATE_NAME",
+        "UPDATE_MARKET",
+        "UPDATE_LOCATION",
+        "CONFIRM_UPDATE_PROFILE",
+      ].includes(userState[userId].step)
+    ) {
+      await handleProfileUpdateFlow(
+        sock,
+        jid,
+        message,
+        text,
+        userId,
+        userNumber,
+      );
+      return;
+    }
+
+    if (userState[userId].step === "IN_MENU") {
+      await handleMenuOption(sock, jid, message, text, userId, userNumber);
+      return;
+    }
+
+    if (userState[userId].step === "AWAITING_MENU_TRIGGER") {
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📋 Escreve *menu* ou *m* para ver  mais opções ...",
+        },
+        { quoted: message },
+      );
+      return;
+    }
+  }
 }

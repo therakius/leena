@@ -33,3 +33,47 @@ export function getUserInfoQuery(number){
 
     
 }
+
+export function getUserBasicInfoQuery(number){
+    return {
+        text: `
+            select id, nome, mercado 
+            from public.vendedores as v
+            where v.telefone ilike '%' || $1 || '%';
+        `,
+        values: [number] 
+    }
+}
+
+export function updateUserNameQuery(phoneNumber, newName) {
+    return {
+        text: `
+            UPDATE public.vendedores
+            SET nome = $2, atualizado_em = NOW()
+            WHERE telefone ILIKE '%' || $1 || '%';
+        `,
+        values: [phoneNumber, newName]
+    }
+}
+
+export function updateUserMarketQuery(phoneNumber, newMarket) {
+    return {
+        text: `
+            UPDATE public.vendedores
+            SET mercado = $2, atualizado_em = NOW()
+            WHERE telefone ILIKE '%' || $1 || '%';
+        `,
+        values: [phoneNumber, newMarket]
+    }
+}
+
+export function updateUserLocationQuery(phoneNumber, newLocation) {
+    return {
+        text: `
+            UPDATE public.vendedores
+            SET localizacao = $2, atualizado_em = NOW()
+            WHERE telefone ILIKE '%' || $1 || '%';
+        `,
+        values: [phoneNumber, newLocation]
+    }
+}
