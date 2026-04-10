@@ -37,7 +37,7 @@ export function getUserInfoQuery(number){
 export function getUserBasicInfoQuery(number){
     return {
         text: `
-            select id, nome, mercado 
+            select id, nome, mercado, localizacao 
             from public.vendedores as v
             where v.telefone ilike '%' || $1 || '%';
         `,
