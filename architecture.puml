@@ -1,4 +1,4 @@
-@startuml system architecture
+@startuml architecture
 top to bottom direction
 
 skinparam {
