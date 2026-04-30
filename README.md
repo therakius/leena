@@ -1,4 +1,5 @@
 # Leena
+> **🌐 [leena-web.vercel.app](https://leena-web.vercel.app)**
 
 Leena é uma assistente de vendas alimentada por IA, criada para apoiar comerciantes de mercados informais na decisão de compra para revenda. O foco é tornar decisões rápidas e assertivas, reduzindo desperdício e aumentando a margem de lucro.
 
