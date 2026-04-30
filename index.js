@@ -1,5 +1,5 @@
 import express from 'express';
-import { pg, startHeartbeat } from './src/config/db.js';
+// import { pg, startHeartbeat} from './src/config/db.js';
 import { setupTable } from './src/services/sessionService.js';
 import { startBot } from './src/services/whatsappService.js';
 
@@ -11,15 +11,12 @@ app.get('/ping', (req, res) => res.send('bot is awake!'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor HTTP rodando na porta ${PORT}`));
 
-pg.connect()
+  setupTable()
   .then(() => {
-    console.log('Connected to the database');
-    startHeartbeat(); // inicia heartbeat
-    return setupTable();
+    console.log('Database ready, starting bot...');
+    return startBot();
   })
-  .then(startBot)
-  .catch(console.error);
-
-pg.on('error', (err) => {
-  console.error('Unexpected DB error:', err);
-});
+  .catch((err) => {
+    console.error('Error during initialization:', err);
+    process.exit(1); // Exit with failure code
+   });
