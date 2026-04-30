@@ -66,7 +66,7 @@ Leena é uma assistente de vendas criada para apoiar comerciantes de mercados in
 **Cenário**: Um camelô de frutas precisa decidir o que comprar para a semana, considerando estoque atual e vendas recentes.
 
 1. **Usuário envia via WhatsApp**: "Atualizar estoque: maçã 50kg, banana 30kg, leite 20l."
-2. **Leena confirma e solicita mais dados**: "Recebido! Me diga as vendas de ontem para análise."
+2. **Leena confirma e solicita mais dados**: "Recebido! éMe diga as vendas de ontem para análise."
 3. **Usuário responde**: "Vendas ontem: maçã 20kg, banana 15kg, leite 10l."
 4. **Leena processa com IA**: Analisa dados internos, clima (chuva prevista) e feriado próximo (aumenta demanda por frutas).
 5. **Leena responde com recomendação**: "Recomendação: Compre mais maçã (alta demanda por feriado), reduza leite (estoque excessivo). Sugestões: maçã +30kg, banana +10kg, leite 0. Alerta: Chuva pode reduzir vendas de leite."
