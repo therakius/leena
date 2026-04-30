@@ -13,7 +13,7 @@ skinparam componentPadding 15
 actor "Utilizador\n(WhatsApp)" as USER
 
 package "Backend (Node.js)" {
-    component "Bot WhatsApp\n(whatsapp-web.js)" as BOT
+    component "Bot WhatsApp\n(Baileys)" as BOT
 }
 
 package "Serviços Externos" {
