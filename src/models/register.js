@@ -17,13 +17,14 @@ export function userIsRegisteredQuery(number){
 export function registerProductQuery(product) {
     return {
         text: `
-        INSERT INTO public.produtos (nome)
-        VALUES ($1)
-        ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome
-        RETURNING id, nome
-        ;
-    `,
-    values: [product]
+            INSERT INTO public.produtos (nome)
+            SELECT $1::varchar
+            WHERE NOT EXISTS (
+                SELECT 1 FROM public.produtos WHERE nome = $1::varchar
+            )
+            RETURNING id, nome
+        `,
+        values: [product]
     }
 }
 
