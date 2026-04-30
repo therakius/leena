@@ -2,25 +2,34 @@ import pkg from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const { Client: PGClient } = pkg;
+const { Pool } = pkg;
 
-export const pg = new PGClient({
+export const pg = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
-// função heartbeat
-export const startHeartbeat = (intervalMs = 4 * 60 * 1000) => {
-  setInterval(async () => {
+pg.on('error', (err) => {
+  console.error('Unexpected DB pool error:', err);
+});
+
+// Patch pg.query with retry logic
+const originalQuery = pg.query.bind(pg);
+pg.query = async (text, params, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
     try {
-      await pg.query('SELECT 1'); // mantém a conexão viva
-      // console.log('DB heartbeat OK');
+      return await originalQuery(text, params);
     } catch (err) {
-      console.error('DB heartbeat falhou:', err);
+      const isLastAttempt = i === retries - 1;
+      const isConnectionError = err.message.includes('timeout') ||
+                                err.message.includes('terminated') ||
+                                err.message.includes('Connection');
+      if (isLastAttempt || !isConnectionError) throw err;
+      console.warn(`DB query failed, retrying (${i + 1}/${retries})...`);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
-  }, intervalMs);
+  }
 };
-// await pg.connect()
-// console.log("connected to the database")
