@@ -83,7 +83,7 @@ export function createComprehensiveProfile(data){
 
                 use esses dados para criar um perfil para esse usuario, e retorne-o em forma de texto, com emojis e textos em destaque. foque em todas as informacoes dadoas. para valores null, usa "*Não especificado*". (somente peça que o usuario atualize os dados nas observacoes)
 
-                os dados sao atualizados atraves do menu: a opcao é numero 5. Atualizar perfil.
+                os dados sao atualizados atraves do menu: a opcao é numero 4. Atualizar perfil.
 
                 lembre-se de que o resultado dado por ti sera reencaminhado ao usuario final, diretamente no whatsapp. entao, use sintaxe do whatsapp para formatar texto.
 
